@@ -1,18 +1,18 @@
 //jshint esversion:6
+require('dotenv').config();
 const express=require("express");
 const ejs=require("ejs");
 const bodyParser=require("body-parser");
 const { urlencoded } = require("body-parser");
 const mongoose=require("mongoose");
 const encrypt=require("mongoose-encryption");
-const secret="thisIsMySecretKeyYouShouldKnow";
 
 mongoose.connect("mongodb://127.0.0.1:27017/userDb");
 const userShcema=new mongoose.Schema({
     user:String,
     password:String
 });
-userShcema.plugin(encrypt,{secret:secret,encryptedFields:["password"]});
+userShcema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]});
 const User=new mongoose.model("User",userShcema);
 
 const app=express();
