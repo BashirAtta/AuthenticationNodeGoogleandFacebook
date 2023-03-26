@@ -5,77 +5,83 @@ const ejs = require("ejs");
 const bodyParser = require("body-parser");
 const { urlencoded } = require("body-parser");
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const saltRounds = 15;
+const session = require('express-session');
+const passport = require("passport");
+const passportLocalMongoose = require('passport-local-mongoose');
+const LocalStrategy = require('passport-local');
 
-// const encrypt=require("mongoose-encryption");
 
-mongoose.connect("mongodb://127.0.0.1:27017/userDb");
-const userShcema = new mongoose.Schema({
-    user: String,
-    password: String
-});
-// userShcema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]});
-const User = new mongoose.model("User", userShcema);
+
+
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.set("view engine", "ejs")
+app.set("view engine", "ejs");
+app.use(session({
+    secret: 'my little secret code is here.',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: true }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+mongoose.connect("mongodb://127.0.0.1:27017/userDb");
+
+const userShcema = new mongoose.Schema({
+    username: String,
+    password: String
+});
+
+userShcema.plugin(passportLocalMongoose);
+const User = new mongoose.model("User", userShcema);
+
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 app.post("/register", function (req, res) {
-
-    bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
-        // Store hash in your password DB.
+    User.register({ username: req.body.username }, req.body.password, function (err, user) {
         if (err) {
-            res.send(err);
+            console.log(err);
+            res.redirect("/register");
         } else {
-            const user = new User({
-                user: req.body.username,
-                password: hash
-            });
-            user.save().then(function (Error) {
-                if (Error) { res.render("secrets.ejs"); } else { res.send(Error); }
 
+            passport.authenticate("local")(req, res, function () {
+                res.redirect("/secret");
             });
         }
     });
-
 });
 
 app.post("/login", function (req, res) {
-    const enterUser = req.body.username;
-    const enterPassword = req.body.password;
 
-    User.findOne({ user: enterUser }).then(function (foundUser, Error) {
-
-        if (Error) {
-            res.send(Error);
-
-        } else {
-
-            if (foundUser) {
-                bcrypt.compare(enterPassword, foundUser.password, function (err, result) {
-                    // result == true
-                    if (result == true) {
-                        if (err) {
-                            console.log(err)
-                        } else {
-                            console.log(foundUser);
-                            res.render("secrets.ejs");
-                        }
-                    } else { res.send("oops no user try again.check pass and username!"); }
-
-                });
-
-
-            }
+        const user=new User({
+            username:req.body.username,
+            password:req.body.password
+        });
+    req.login(user,function(err){
+        if(err){
+            console.log(err);
+        }else{
+            passport.authenticate("local")(req, res, function () {
+                res.redirect("/secret");
+            });
 
         }
     });
 });
 
 
+app.get("/secret", function (req, res) {
+    if (req.isAuthenticated) {
+        res.render("secrets.ejs");
+    } else {
+        res.redirect("/login");
+    }
+});
 
 app.get("/", function (req, res) {
     res.render("home.ejs");
