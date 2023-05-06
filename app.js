@@ -48,12 +48,8 @@ const User = new mongoose.model("User", userShcema);
 passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-// passport.serializeUser(function(user, done) {
-//     done(null, user.id); 
-// passport.deserializeUser(function(id, done) {
-//     User.findById(id).then(function(err, user) {
-//         done(err, user);}) 
-//     });
+
+
 
 // google strategy /////////////////////////////////
 passport.use(new GoogleStrategy({
@@ -84,7 +80,7 @@ passport.use(new GoogleStrategy({
            return done(err);
         }
     }
- 
+
 ));
 passport.use(new FacebookStrategy({
     clientID: process.env.F_APPID,
@@ -135,11 +131,7 @@ app.post("/register", function (req, res) {
 
     });
 
-// app.post('/login',
-//     passport.authenticate('local', { failureRedirect: '/login', failureMessage: true }),
-//     function (req, res) {
-//         res.redirect("/secret");
-//     });
+
 app.post("/login", function (req, res) {
 
     const user = new User({
@@ -229,14 +221,8 @@ app.get("/secret", function (req, res) {
 
             }
         }
-       
-            
-              
-            
-       
-        
     });
-   
+
 });
 
 app.get("/", function (req, res) {
@@ -263,7 +249,7 @@ app.get("/submit", function (req, res) {
    }else{
     res.redirect("/login");
    }
-    
+
 });
 
 
